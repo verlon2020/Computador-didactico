@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🖥️ ¡Arma tu Computador! - Aprende Jugando</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --yellow: #FFD93D;
+    --orange: #FF6B35;
+    --blue: #4ECDC4;
+    --purple: #A855F7;
+    --pink: #FF6B9D;
+    --green: #6BCB77;
+    --dark: #1a1a2e;
+    --card-bg: #ffffff;
+    --shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Estrellas de fondo */
+  .stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 2s infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.3; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.3); }
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border-bottom: 3px solid rgba(255,255,255,0.3);
+  }
+
+  header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: white;
+    text-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+    letter-spacing: 2px;
+  }
+
+  header p {
+    color: rgba(255,255,255,0.9);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 5px;
+  }
+
+  .score-bar {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    background: var(--yellow);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-weight: 800;
+    color: #333;
+    font-size: 0.95rem;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+    animation: bounce 1s infinite alternate;
+  }
+  @keyframes bounce {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-4px); }
+  }
+
+  .main-layout {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    gap: 15px;
+    padding: 15px;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: calc(100vh - 130px);
+  }
+
+  /* PANEL IZQUIERDO - Piezas disponibles */
+  .parts-panel {
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: var(--shadow);
+    height: fit-content;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+  }
+
+  .parts-panel h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    color: var(--purple);
+    text-align: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 3px dashed var(--purple);
+  }
+
+  .part-card {
+    background: white;
+    border-radius: 15px;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .part-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 5px; height: 100%;
+    border-radius: 15px 0 0 15px;
+  }
+
+  .part-card:hover {
+    transform: translateX(5px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+
+  .part-card.selected {
+    border-color: var(--blue);
+    background: #f0fffe;
+    transform: translateX(8px);
+  }
+
+  .part-card.installed {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+  }
+
+  .part-card.installed::after {
+    content: '✅ Instalada';
+    position: absolute;
+    top: 50%; right: 10px;
+    transform: translateY(-50%);
+    background: var(--green);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 10px;
+  }
+
+  .part-icon-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .part-emoji {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+
+  .part-info h3 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #333;
+    line-height: 1.2;
+  }
+
+  .part-info .part-hint {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  /* PANEL CENTRAL - Gabinete 3D */
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .viewer-3d {
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .viewer-3d h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: var(--orange);
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  #canvas-3d {
+    width: 100%;
+    height: 300px;
+    border-radius: 15px;
+    background: linear-gradient(180deg, #1a1a3e 0%, #2d1b69 50%, #0f3460 100%);
+    cursor: grab;
+    display: block;
+  }
+
+  #canvas-3d:active { cursor: grabbing; }
+
+  .viewer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-btn {
+    background: var(--purple);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+  }
+  .ctrl-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
+  .ctrl-btn:active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+
+  /* Gabinete ensamblado */
+  .gabinete-panel {
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: var(--shadow);
+    flex: 1;
+  }
+
+  .gabinete-panel h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: var(--green);
+    text-align: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 3px dashed var(--green);
+  }
+
+  .gabinete-visual {
+    background: linear-gradient(135deg, #2c2c54, #1a1a2e);
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+    min-height: 200px;
+    border: 3px solid #555;
+    overflow: hidden;
+  }
+
+  .gabinete-visual::before {
+    content: '🖥️ Gabinete de tu computador';
+    position: absolute;
+    top: -1px; left: 50%;
+    transform: translateX(-50%);
+    background: #555;
+    color: #ccc;
+    font-size: 0.7rem;
+    padding: 2px 12px;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .installed-parts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .installed-part-chip {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 8px 5px;
+    text-align: center;
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .installed-part-chip:hover {
+    background: rgba(255,255,255,0.2);
+    transform: scale(1.05);
+  }
+
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(0) rotate(-10deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+  }
+
+  .installed-part-chip .chip-emoji { font-size: 1.5rem; }
+  .installed-part-chip .chip-name {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.8);
+    font-weight: 700;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .empty-gabinete {
+    text-align: center;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.9rem;
+    margin-top: 20px;
+    padding: 20px;
+  }
+
+  .progress-bar-wrap {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    height: 12px;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    position: relative;
+  }
+
+  .progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* PANEL DERECHO - Info */
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .info-card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: var(--shadow);
+  }
+
+  .info-card h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+
+  .part-detail {
+    display: none;
+  }
+
+  .part-detail.active {
+    display: block;
+    animation: fadeUp 0.4s ease;
+  }
+
+  @keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .detail-emoji {
+    font-size: 3.5rem;
+    text-align: center;
+    display: block;
+    margin-bottom: 10px;
+    animation: wiggle 1s ease infinite alternate;
+  }
+
+  @keyframes wiggle {
+    0% { transform: rotate(-5deg) scale(1); }
+    100% { transform: rotate(5deg) scale(1.1); }
+  }
+
+  .detail-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.4rem;
+    text-align: center;
+    margin-bottom: 5px;
+  }
+
+  .detail-subtitle {
+    font-size: 0.85rem;
+    color: #888;
+    text-align: center;
+    margin-bottom: 12px;
+    font-style: italic;
+  }
+
+  .detail-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #444;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 12px;
+    border-left: 4px solid var(--blue);
+  }
+
+  .fun-fact {
+    background: linear-gradient(135deg, #fff3cd, #ffeeba);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    border-left: 4px solid var(--yellow);
+    color: #664d03;
+  }
+
+  .fun-fact::before {
+    content: '💡 ¡Dato curioso! ';
+    font-weight: 800;
+  }
+
+  .install-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--green), #2ecc71);
+    color: white;
+    border: none;
+    border-radius: 15px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #27ae60;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .install-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #27ae60; }
+  .install-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #27ae60; }
+  .install-btn:disabled {
+    background: #ccc;
+    box-shadow: 0 5px 0 #aaa;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Placeholder info */
+  .info-placeholder {
+    text-align: center;
+    padding: 20px;
+    color: #aaa;
+  }
+  .info-placeholder .big-arrow { font-size: 2rem; animation: arrowBounce 1s infinite alternate; }
+  @keyframes arrowBounce {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-8px); }
+  }
+  .info-placeholder p { margin-top: 10px; font-size: 0.9rem; line-height: 1.4; }
+
+  /* Felicitaciones */
+  .congrats-card {
+    background: linear-gradient(135deg, #FFD93D, #FF6B35);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    display: none;
+    animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .congrats-card.show { display: block; }
+
+  .congrats-card h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    color: white;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+  }
+
+  .congrats-card p { color: white; font-weight: 700; margin-top: 8px; }
+
+  .restart-btn {
+    margin-top: 12px;
+    padding: 10px 20px;
+    background: white;
+    color: var(--orange);
+    border: none;
+    border-radius: 12px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    transition: all 0.2s;
+  }
+  .restart-btn:hover { transform: translateY(-2px); }
+
+  /* Confetti */
+  .confetti-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .confetti-piece {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    pointer-events: none;
+    z-index: 999;
+    display: none;
+    max-width: 200px;
+    text-align: center;
+  }
+
+  /* Sonido visual */
+  .sound-wave {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    font-size: 2rem;
+    animation: soundAnim 0.8s ease forwards;
+  }
+
+  @keyframes soundAnim {
+    0% { opacity: 1; transform: scale(0.5); }
+    50% { opacity: 1; transform: scale(1.5); }
+    100% { opacity: 0; transform: scale(2) translateY(-30px); }
+  }
+
+  /* Scroll personalizado */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 10px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main-layout {
+      grid-template-columns: 1fr;
+    }
+    .parts-panel {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    /* En móvil las partes en fila horizontal */
+    .part-card {
+      display: inline-block;
+      width: auto;
+      margin: 5px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Estrellas de fondo -->
+<div class="stars" id="stars"></div>
+
+<!-- HEADER -->
+<header>
+  <h1>🖥️ ¡Arma tu Computador! 🔧</h1>
+  <p>Aprende las piezas del computador jugando</p>
+  <div class="score-bar">
+    <div class="badge" id="badge-piezas">🔩 Piezas: 0 / 8</div>
+    <div class="badge" id="badge-puntos">⭐ Puntos: 0</div>
+    <div class="badge" id="badge-nivel">🏆 Nivel: Aprendiz</div>
+  </div>
+</header>
+
+<!-- LAYOUT PRINCIPAL -->
+<div class="main-layout">
+
+  <!-- IZQUIERDA: Piezas disponibles -->
+  <div class="parts-panel">
+    <h2>🛒 Piezas Disponibles</h2>
+    <div id="parts-list"></div>
+  </div>
+
+  <!-- CENTRO: Vista 3D + Gabinete -->
+  <div class="center-panel">
+    <!-- Vista 3D -->
+    <div class="viewer-3d">
+      <h2>🔍 Vista 3D de la Pieza</h2>
+      <canvas id="canvas-3d"></canvas>
+      <div class="viewer-controls">
+        <button class="ctrl-btn" onclick="rotatePiece('left')">⬅️ Girar</button>
+        <button class="ctrl-btn" onclick="rotatePiece('right')">Girar ➡️</button>
+        <button class="ctrl-btn" onclick="rotatePiece('up')">⬆️ Arriba</button>
+        <button class="ctrl-btn" onclick="rotatePiece('down')">⬇️ Abajo</button>
+        <button class="ctrl-btn" onclick="resetCamera()">🔄 Reset</button>
+        <button class="ctrl-btn" onclick="zoomIn()">🔍+</button>
+        <button class="ctrl-btn" onclick="zoomOut()">🔍-</button>
+      </div>
+    </div>
+
+    <!-- Gabinete -->
+    <div class="gabinete-panel">
+      <h2>🖥️ Tu Computador</h2>
+      <div class="gabinete-visual">
+        <div class="installed-parts-grid" id="installed-parts-grid">
+          <div class="empty-gabinete" id="empty-msg">
+            ¡Todavía no has instalado ninguna pieza!<br>
+            👈 Selecciona una pieza de la izquierda
+          </div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DERECHA: Información de la pieza -->
+  <div class="info-panel">
+    <div class="info-card" id="info-card">
+      <h2 style="color: var(--blue);">📖 ¿Qué es esta pieza?</h2>
+
+      <!-- Placeholder -->
+      <div class="info-placeholder" id="info-placeholder">
+        <div class="big-arrow">👈</div>
+        <p>¡Haz clic en una pieza de la lista para aprender qué hace!</p>
+      </div>
+
+      <!-- Detalle de cada pieza -->
+      <div id="part-detail-content"></div>
+    </div>
+
+    <!-- Felicitaciones -->
+    <div class="congrats-card" id="congrats-card">
+      <div style="font-size: 3rem;">🎉🏆🎉</div>
+      <h2>¡FELICITACIONES!</h2>
+      <p>¡Armaste tu computador completo!<br>¡Eres un genio de la tecnología!</p>
+      <div style="font-size: 2rem; margin: 10px 0;">🌟⭐🌟</div>
+      <button class="restart-btn" onclick="restartGame()">🔄 Jugar de Nuevo</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Confetti -->
+<div class="confetti-container" id="confetti-container"></div>
+
+<script>
+// =============================================
+//  DATOS DE LAS PIEZAS
+// =============================================
+const PARTS = [
+  {
+    id: 'motherboard',
+    name: 'Tarjeta Madre',
+    emoji: '🟢',
+    color: '#2ecc71',
+    bg: '#eafaf1',
+    hint: 'La base de todo',
+    subtitle: 'También llamada Motherboard o Placa Base',
+    description: '¡Es como el esqueleto del computador! La tarjeta madre conecta todas las piezas entre sí. Sin ella, el computador no puede funcionar. Todas las piezas se conectan aquí.',
+    funFact: '¡Una tarjeta madre tiene miles de caminos pequeñísimos por donde viaja la electricidad, más delgados que un pelo humano!',
+    points: 150,
+    shape: 'motherboard'
+  },
+  {
+    id: 'cpu',
+    name: 'Procesador (CPU)',
+    emoji: '🧠',
+    color: '#e74c3c',
+    bg: '#fdf2f2',
+    hint: 'El cerebro del PC',
+    subtitle: 'CPU = Unidad Central de Procesamiento',
+    description: '¡El procesador es el CEREBRO del computador! Hace todos los cálculos y da las órdenes. Cuando juegas, él decide qué pasa en pantalla. ¡Puede hacer millones de operaciones en 1 segundo!',
+    funFact: '¡Un procesador moderno puede hacer más de 3.000 MILLONES de operaciones cada segundo! Más rápido que cualquier persona.',
+    points: 200,
+    shape: 'cpu'
+  },
+  {
+    id: 'ram',
+    name: 'Memoria RAM',
+    emoji: '💾',
+    color: '#3498db',
+    bg: '#ebf5fb',
+    hint: 'La memoria rápida',
+    subtitle: 'RAM = Memoria de Acceso Aleatorio',
+    description: '¡La RAM es como la mesa de trabajo del computador! Cuando abres un juego, se guarda aquí para que puedas usarlo rápidamente. Cuanta más RAM, más cosas puedes hacer al mismo tiempo.',
+    funFact: '¡La RAM olvida todo cuando apagas el computador, como si borrara la pizarra! Por eso debes guardar tu tarea antes de apagarlo.',
+    points: 120,
+    shape: 'ram'
+  },
+  {
+    id: 'gpu',
+    name: 'Tarjeta de Video',
+    emoji: '🎮',
+    color: '#9b59b6',
+    bg: '#f5eef8',
+    hint: 'Dibuja las imágenes',
+    subtitle: 'GPU = Unidad de Procesamiento Gráfico',
+    description: '¡La tarjeta de video es el artista del computador! Ella dibuja todo lo que ves en la pantalla: juegos, videos, fotos. ¡Sin ella, no podrías ver nada colorido ni en 3D!',
+    funFact: '¡Una buena tarjeta de video puede dibujar más de 100 imágenes distintas cada segundo! Por eso los juegos se ven tan fluidos.',
+    points: 180,
+    shape: 'gpu'
+  },
+  {
+    id: 'hdd',
+    name: 'Disco Duro (HDD)',
+    emoji: '💿',
+    color: '#f39c12',
+    bg: '#fefcde',
+    hint: 'Guarda todo',
+    subtitle: 'HDD = Disco Duro de Almacenamiento',
+    description: '¡El disco duro es la mochila del computador! Guarda todos tus juegos, fotos, música y documentos para siempre. Aunque apagues el computador, ahí seguirán guardados.',
+    funFact: '¡Dentro del disco duro hay un platillo que gira muy rápido, como un CD! Un cabezal pequeñísimo lee y escribe la información.',
+    points: 100,
+    shape: 'hdd'
+  },
+  {
+    id: 'psu',
+    name: 'Fuente de Poder',
+    emoji: '⚡',
+    color: '#e67e22',
+    bg: '#fdf2e1',
+    hint: 'Da energía',
+    subtitle: 'PSU = Power Supply Unit',
+    description: '¡La fuente de poder es el corazón eléctrico del computador! Toma la electricidad del enchufe y la convierte en la energía exacta que necesita cada pieza. Sin ella, nada funciona.',
+    funFact: '¡La fuente de poder transforma la electricidad de tu casa (220 voltios) en voltajes pequeños como 12V y 5V que usan las piezas!',
+    points: 90,
+    shape: 'psu'
+  },
+  {
+    id: 'cooler',
+    name: 'Ventilador (Cooler)',
+    emoji: '🌀',
+    color: '#1abc9c',
+    bg: '#e8f8f5',
+    hint: 'Enfría el CPU',
+    subtitle: 'Mantiene todo fresquito',
+    description: '¡El cooler es el ventilador del computador! Como el procesador trabaja tanto, se calienta mucho. El cooler lo enfría para que no se dañe. ¡Es como el aire acondicionado del CPU!',
+    funFact: '¡Sin el cooler, el procesador se calentaría tanto que se apaga solo para protegerse! Puede llegar a más de 100 grados Celsius.',
+    points: 80,
+    shape: 'cooler'
+  },
+  {
+    id: 'case',
+    name: 'Gabinete',
+    emoji: '🏠',
+    color: '#95a5a6',
+    bg: '#f0f3f4',
+    hint: 'La caja protectora',
+    subtitle: 'La casa de todas las piezas',
+    description: '¡El gabinete es la casa del computador! Protege a todas las piezas dentro de una caja fuerte. Tiene ventiladores para que entre aire frío y todo esté bien organizado y seguro.',
+    funFact: '¡Los gabinetes vienen en muchos colores y formas! Algunos tienen luces LED de colores que cambian, ¡como discotecas para computadores!',
+    points: 60,
+    shape: 'case'
+  }
+];
+
+// =============================================
+//  ESTADO DEL JUEGO
+// =============================================
+let installedParts = [];
+let selectedPart = null;
+let points = 0;
+
+const LEVELS = [
+  { min: 0, name: 'Aprendiz', emoji: '📚' },
+  { min: 200, name: 'Técnico', emoji: '🔧' },
+  { min: 500, name: 'Experto', emoji: '💡' },
+  { min: 800, name: 'Ingeniero', emoji: '🎓' },
+  { min: 1000, name: '¡Genio!', emoji: '🏆' }
+];
+
+// =============================================
+//  THREE.JS - RENDERIZADOR 3D
+// =============================================
+let scene, camera, renderer, currentMesh, animFrameId;
+let isDragging = false, prevMouse = { x: 0, y: 0 };
+let targetRotX = 0, targetRotY = 0, currentRotX = 0, currentRotY = 0;
+let zoomLevel = 5;
+
+function init3D() {
+  const canvas = document.getElementById('canvas-3d');
+  const W = canvas.clientWidth || 600;
+  const H = 300;
+
+  scene = new THREE.Scene();
+  scene.background = null;
+
+  camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
+  camera.position.set(0, 0, zoomLevel);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+
+  // Luces
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  dirLight.position.set(5, 8, 5);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+
+  const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+  fillLight.position.set(-5, -2, -5);
+  scene.add(fillLight);
+
+  // Partículas de fondo
+  const particleGeo = new THREE.BufferGeometry();
+  const count = 80;
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count * 3; i++) pos[i] = (Math.random() - 0.5) * 20;
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const partMat = new THREE.PointsMaterial({ color: 0xaaaaff, size: 0.05 });
+  scene.add(new THREE.Points(particleGeo, partMat));
+
+  // Mostrar pieza por defecto
+  show3DModel('cpu');
+
+  // Eventos de mouse
+  canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    prevMouse = { x: e.clientX, y: e.clientY };
+  });
+  window.addEventListener('mouseup', () => isDragging = false);
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - prevMouse.x;
+    const dy = e.clientY - prevMouse.y;
+    targetRotY += dx * 0.01;
+    targetRotX += dy * 0.01;
+    prevMouse = { x: e.clientX, y: e.clientY };
+  });
+
+  canvas.addEventListener('wheel', e => {
+    zoomLevel = Math.max(2, Math.min(12, zoomLevel + e.deltaY * 0.01));
+    camera.position.z = zoomLevel;
+  });
+
+  // Touch
+  let lastTouch = null;
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) { isDragging = true; lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
+  });
+  canvas.addEventListener('touchend', () => isDragging = false);
+  canvas.addEventListener('touchmove', e => {
+    if (!isDragging || !lastTouch) return;
+    const dx = e.touches[0].clientX - lastTouch.x;
+    const dy = e.touches[0].clientY - lastTouch.y;
+    targetRotY += dx * 0.01;
+    targetRotX += dy * 0.01;
+    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  });
+
+  animate();
+}
+
+function animate() {
+  animFrameId = requestAnimationFrame(animate);
+  // Suavizado de rotación
+  currentRotX += (targetRotX - currentRotX) * 0.08;
+  currentRotY += (targetRotY - currentRotY) * 0.08;
+
+  if (currentMesh) {
+    currentMesh.rotation.x = currentRotX;
+    currentMesh.rotation.y = currentRotY + performance.now() * 0.0005;
+    // Flotación
+    currentMesh.position.y = Math.sin(performance.now() * 0.001) * 0.15;
+  }
+  renderer.render(scene, camera);
+}
+
+function clearCurrentMesh() {
+  if (currentMesh) {
+    scene.remove(currentMesh);
+    currentMesh.traverse(c => {
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) { if (Array.isArray(c.material)) c.material.forEach(m => m.dispose()); else c.material.dispose(); }
+    });
+    currentMesh = null;
+  }
+}
+
+function show3DModel(partId) {
+  clearCurrentMesh();
+  targetRotX = 0.3; targetRotY = 0.5;
+  currentRotX = 0.3; currentRotY = 0.5;
+
+  const part = PARTS.find(p => p.id === partId);
+  if (!part) return;
+
+  const group = new THREE.Group();
+
+  const matColor = parseInt(part.color.replace('#', ''), 16);
+  const mainMat = new THREE.MeshStandardMaterial({ color: matColor, metalness: 0.4, roughness: 0.3 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.7, roughness: 0.2 });
+  const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4a017, metalness: 0.8, roughness: 0.2 });
+  const silverMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.9, roughness: 0.1 });
+  const glowMat = new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x00ff88, emissiveIntensity: 0.5, metalness: 0, roughness: 1 });
+  const redMat = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0xff0000, emissiveIntensity: 0.3 });
+
+  if (partId === 'motherboard') {
+    // Placa base grande
+    const board = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 2.5), new THREE.MeshStandardMaterial({ color: 0x1a6b1a, metalness: 0.2, roughness: 0.8 }));
+    group.add(board);
+    // Slots RAM
+    for (let i = 0; i < 4; i++) {
+      const slot = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.8), darkMat);
+      slot.position.set(0.6 + i * 0.25, 0.14, 0.4);
+      group.add(slot);
+    }
+    // Socket CPU
+    const socket = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.7), silverMat);
+    socket.position.set(-0.5, 0.065, 0.3);
+    group.add(socket);
+    // Capacitores
+    for (let i = 0; i < 8; i++) {
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.15, 8), redMat);
+      cap.position.set(-1.2 + i * 0.28, 0.12, -0.6);
+      group.add(cap);
+    }
+    // Conectores
+    for (let i = 0; i < 3; i++) {
+      const conn = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.1), new THREE.MeshStandardMaterial({ color: 0x3333ff }));
+      conn.position.set(1.3, 0.1, -0.8 + i * 0.3);
+      group.add(conn);
+    }
+
+  } else if (partId === 'cpu') {
+    // CPU principal
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 1.2), silverMat);
+    group.add(body);
+    // Die del procesador
+    const die = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.6), darkMat);
+    die.position.y = 0.115;
+    group.add(die);
+    // Pines
+    const pinGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6);
+    for (let x = -5; x <= 5; x++) {
+      for (let z = -5; z <= 5; z++) {
+        const pin = new THREE.Mesh(pinGeo, goldMat);
+        pin.position.set(x * 0.1, -0.115, z * 0.1);
+        group.add(pin);
+      }
+    }
+    // Letras IHS (logo)
+    const logo = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.01, 0.08), goldMat);
+    logo.position.set(0, 0.08, 0.2);
+    group.add(logo);
+
+  } else if (partId === 'ram') {
+    // Stick de RAM
+    const stick = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 0.1), new THREE.MeshStandardMaterial({ color: 0x222266, metalness: 0.5, roughness: 0.5 }));
+    group.add(stick);
+    // Chips de memoria
+    for (let i = 0; i < 8; i++) {
+      const chip = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.05), darkMat);
+      chip.position.set(-1.05 + i * 0.3, 0.1, 0.08);
+      group.add(chip);
+    }
+    // Notch
+    const notch = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.12), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+    notch.position.set(0.5, -0.25, 0);
+    group.add(notch);
+    // Pines dorados
+    for (let i = 0; i < 20; i++) {
+      const pin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), goldMat);
+      pin.position.set(-1.4 + i * 0.15, -0.35, 0);
+      group.add(pin);
+    }
+    // LED decorativo
+    const led = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, 0.05), glowMat);
+    led.position.set(0, 0.23, 0.08);
+    group.add(led);
+
+  } else if (partId === 'gpu') {
+    // PCB
+    const pcb = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 1.2), new THREE.MeshStandardMaterial({ color: 0x1a1a4a, metalness: 0.3 }));
+    group.add(pcb);
+    // Cooler grande
+    const coolerBody = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 1), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.7, roughness: 0.2 }));
+    coolerBody.position.y = 0.25;
+    group.add(coolerBody);
+    // Ventiladores
+    for (let i = 0; i < 2; i++) {
+      const fan = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.08, 16), silverMat);
+      fan.rotation.x = Math.PI / 2;
+      fan.position.set(-0.7 + i * 1.4, 0.42, 0);
+      group.add(fan);
+      // Centro ventilador
+      const fanCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.1, 8), darkMat);
+      fanCenter.rotation.x = Math.PI / 2;
+      fanCenter.position.set(-0.7 + i * 1.4, 0.42, 0.05);
+      group.add(fanCenter);
+    }
+    // Conectores power
+    const pwr = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.3), new THREE.MeshStandardMaterial({ color: 0xff4400 }));
+    pwr.position.set(1.3, 0.15, -0.5);
+    group.add(pwr);
+    // Puertos de salida
+    for (let i = 0; i < 3; i++) {
+      const port = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.08), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      port.position.set(-1.4, -0.15 + i * 0.01, 0.6);
+      group.add(port);
+    }
+
+  } else if (partId === 'hdd') {
+    // Cuerpo
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 1.8), new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8, roughness: 0.2 }));
+    group.add(body);
+    // Plato giratorio
+    const plato = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.05, 32), silverMat);
+    plato.rotation.x = Math.PI / 2;
+    plato.position.set(0.2, 0.23, 0);
+    group.add(plato);
+    // Brazo lector
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.1), new THREE.MeshStandardMaterial({ color: 0xffaa00 }));
+    arm.position.set(0.2, 0.28, 0.2);
+    arm.rotation.y = -0.5;
+    group.add(arm);
+    // Conector SATA
+    const sata = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0xff6600 }));
+    sata.position.set(-1.1, 0, 0.7);
+    group.add(sata);
+    // Tornillos
+    const tornGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.1, 8);
+    const tornPositions = [[-1.2, 0.22, -0.85], [-1.2, 0.22, 0.85], [1.2, 0.22, -0.85], [1.2, 0.22, 0.85]];
+    tornPositions.forEach(p => {
+      const t = new THREE.Mesh(tornGeo, silverMat);
+      t.position.set(...p);
+      group.add(t);
+    });
+
+  } else if (partId === 'psu') {
+    // Caja principal
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1.5), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.3 }));
+    group.add(body);
+    // Ventilador
+    const fanHole = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.02, 16), darkMat);
+    fanHole.rotation.x = Math.PI / 2;
+    fanHole.position.set(0, 0, 0.76);
+    group.add(fanHole);
+    const fanBlade = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.03, 8), silverMat);
+    fanBlade.rotation.x = Math.PI / 2;
+    fanBlade.position.set(0, 0, 0.77);
+    group.add(fanBlade);
+    // Cables saliendo
+    const cableColors = [0xffff00, 0xff0000, 0x000000, 0xff6600, 0x0000ff];
+    cableColors.forEach((color, i) => {
+      const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6, 6), new THREE.MeshStandardMaterial({ color }));
+      cable.rotation.z = Math.PI / 2;
+      cable.position.set(1.3, 0.2 - i * 0.1, -0.3 + i * 0.15);
+      group.add(cable);
+    });
+    // Sticker
+    const sticker = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.02), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    sticker.position.set(0, 0.1, 0.76);
+    group.add(sticker);
+
+  } else if (partId === 'cooler') {
+    // Base del cooler
+    const base = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 1), silverMat);
+    group.add(base);
+    // Aletas de disipación
+    for (let i = 0; i < 12; i++) {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.04), silverMat);
+      fin.position.set(0, 0.35, -0.45 + i * 0.08);
+      group.add(fin);
+    }
+    // Ventilador encima
+    const fanFrame = new THREE.Mesh(new THREE.BoxGeometry(1, 0.12, 1), darkMat);
+    fanFrame.position.y = 0.7;
+    group.add(fanFrame);
+    const fanBlades = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.06, 16), new THREE.MeshStandardMaterial({ color: 0x4488ff, transparent: true, opacity: 0.7 }));
+    fanBlades.position.y = 0.72;
+    group.add(fanBlades);
+    // LED azul
+    const led = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 8), new THREE.MeshStandardMaterial({ color: 0x0044ff, emissive: 0x0044ff, emissiveIntensity: 1 }));
+    led.position.set(0, 0.78, 0);
+    group.add(led);
+    // Heatpipes
+    for (let i = 0; i < 4; i++) {
+      const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.7, 8), new THREE.MeshStandardMaterial({ color: 0xcc8800, metalness: 0.9 }));
+      pipe.position.set(-0.25 + i * 0.15, 0.35, 0);
+      group.add(pipe);
+    }
+
+  } else if (partId === 'case') {
+    // Cuerpo gabinete
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 2), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.5, roughness: 0.5 }));
+    group.add(body);
+    // Panel de vidrio
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.02, 2.2, 1.8), new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.3, metalness: 0, roughness: 0 }));
+    glass.position.set(0.75, 0, 0);
+    group.add(glass);
+    // LED strip
+    const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2.1, 0.03), new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0xff00ff, emissiveIntensity: 0.8 }));
+    ledStrip.position.set(0.73, 0, 0.87);
+    group.add(ledStrip);
+    // Botón de encendido
+    const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.05, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00ff00, emissiveIntensity: 0.5 }));
+    btn.rotation.z = Math.PI / 2;
+    btn.position.set(0.77, 0.9, 0.5);
+    group.add(btn);
+    // USB ports
+    for (let i = 0; i < 2; i++) {
+      const usb = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.1), new THREE.MeshStandardMaterial({ color: 0x4444ff }));
+      usb.position.set(0.77, 0.7, 0.3 + i * 0.2);
+      group.add(usb);
+    }
+    // Pies del gabinete
+    for (let i = 0; i < 4; i++) {
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.1, 8), darkMat);
+      foot.position.set(i < 2 ? -0.6 : 0.6, -1.3, i % 2 === 0 ? -0.85 : 0.85);
+      group.add(foot);
+    }
+  }
+
+  scene.add(group);
+  currentMesh = group;
+}
+
+function rotatePiece(dir) {
+  if (dir === 'left') targetRotY -= 0.5;
+  if (dir === 'right') targetRotY += 0.5;
+  if (dir === 'up') targetRotX -= 0.5;
+  if (dir === 'down') targetRotX += 0.5;
+}
+
+function resetCamera() {
+  targetRotX = 0.3; targetRotY = 0.5;
+  zoomLevel = 5; camera.position.z = 5;
+}
+
+function zoomIn() { zoomLevel = Math.max(2, zoomLevel - 1); camera.position.z = zoomLevel; }
+function zoomOut() { zoomLevel = Math.min(12, zoomLevel + 1); camera.position.z = zoomLevel; }
+
+// =============================================
+//  INTERFAZ DE JUEGO
+// =============================================
+function createStars() {
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 50; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 3 + 1;
+    s.style.cssText = `
+      width: ${size}px; height: ${size}px;
+      left: ${Math.random() * 100}%;
+      top: ${Math.random() * 100}%;
+      animation-delay: ${Math.random() * 2}s;
+      animation-duration: ${1.5 + Math.random() * 2}s;
+    `;
+    starsEl.appendChild(s);
+  }
+}
+
+function renderParts() {
+  const list = document.getElementById('parts-list');
+  list.innerHTML = '';
+  PARTS.forEach(part => {
+    const isInstalled = installedParts.includes(part.id);
+    const isSelected = selectedPart?.id === part.id;
+    const card = document.createElement('div');
+    card.className = `part-card${isSelected ? ' selected' : ''}${isInstalled ? ' installed' : ''}`;
+    card.style.setProperty('--card-accent', part.color);
+    card.style.background = isInstalled ? '#f9f9f9' : (isSelected ? part.bg : 'white');
+    card.innerHTML = `
+      <div class="part-icon-wrap">
+        <div class="part-emoji" style="background:${part.bg};">${part.emoji}</div>
+        <div class="part-info">
+          <h3>${part.name}</h3>
+          <div class="part-hint">${part.hint} • ⭐${part.points} pts</div>
+        </div>
+      </div>
+    `;
+    card.querySelector('.part-icon-wrap > .part-emoji').style.cssText = `
+      background: ${part.bg};
+      font-size: 1.8rem;
+      width: 46px; height: 46px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 12px; flex-shrink: 0;
+    `;
+    if (!isInstalled) card.onclick = () => selectPart(part);
+    list.appendChild(card);
+  });
+}
+
+function selectPart(part) {
+  selectedPart = part;
+  renderParts();
+  show3DModel(part.id);
+  showPartInfo(part);
+  playSelectSound();
+}
+
+function showPartInfo(part) {
+  document.getElementById('info-placeholder').style.display = 'none';
+  const content = document.getElementById('part-detail-content');
+  const isInstalled = installedParts.includes(part.id);
+  content.innerHTML = `
+    <div class="part-detail active">
+      <span class="detail-emoji">${part.emoji}</span>
+      <div class="detail-name" style="color:${part.color}">${part.name}</div>
+      <div class="detail-subtitle">${part.subtitle}</div>
+      <div class="detail-description">${part.description}</div>
+      <div class="fun-fact">${part.funFact}</div>
+      <button class="install-btn" id="install-btn" onclick="installPart('${part.id}')"
+        ${isInstalled ? 'disabled' : ''}>
+        ${isInstalled ? '✅ ¡Ya instalada!' : `🔧 ¡Instalar en el Gabinete! (+${part.points} pts)`}
+      </button>
+    </div>
+  `;
+}
+
+function installPart(partId) {
+  if (installedParts.includes(partId)) return;
+  const part = PARTS.find(p => p.id === partId);
+  if (!part) return;
+
+  installedParts.push(partId);
+  points += part.points;
+
+  // Actualizar badge
+  document.getElementById('badge-piezas').textContent = `🔩 Piezas: ${installedParts.length} / ${PARTS.length}`;
+  document.getElementById('badge-puntos').textContent = `⭐ Puntos: ${points}`;
+
+  // Nivel
+  let level = LEVELS[0];
+  for (const l of LEVELS) { if (points >= l.min) level = l; }
+  document.getElementById('badge-nivel').textContent = `${level.emoji} Nivel: ${level.name}`;
+
+  // Progreso
+  const progress = (installedParts.length / PARTS.length) * 100;
+  document.getElementById('progress-bar').style.width = progress + '%';
+
+  renderParts();
+  renderInstalledParts();
+  showPartInfo(part);
+  playInstallSound();
+  showEffect(part.emoji);
+
+  // Minifetti
+  if (installedParts.length % 2 === 0) launchConfetti(10);
+
+  // Felicitaciones al completar
+  if (installedParts.length === PARTS.length) {
+    setTimeout(() => {
+      document.getElementById('congrats-card').classList.add('show');
+      launchConfetti(80);
+      playWinSound();
+    }, 500);
+  }
+}
+
+function renderInstalledParts() {
+  const grid = document.getElementById('installed-parts-grid');
+  const emptyMsg = document.getElementById('empty-msg');
+
+  if (installedParts.length === 0) {
+    if (!emptyMsg) {
+      grid.innerHTML = `<div class="empty-gabinete" id="empty-msg">¡Todavía no has instalado ninguna pieza!<br>👈 Selecciona una pieza de la izquierda</div>`;
+    }
+    return;
+  }
+
+  grid.innerHTML = '';
+  installedParts.forEach(partId => {
+    const part = PARTS.find(p => p.id === partId);
+    const chip = document.createElement('div');
+    chip.className = 'installed-part-chip';
+    chip.innerHTML = `
+      <div class="chip-emoji">${part.emoji}</div>
+      <span class="chip-name">${part.name}</span>
+    `;
+    chip.onclick = () => selectPart(part);
+    grid.appendChild(chip);
+  });
+}
+
+// =============================================
+//  EFECTOS
+// =============================================
+function playSelectSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(780, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.start(); osc.stop(ctx.currentTime + 0.2);
+  } catch(e) {}
+}
+
+function playInstallSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [440, 550, 660, 880].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.08);
+      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.08 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.2);
+      osc.start(ctx.currentTime + i * 0.08);
+      osc.stop(ctx.currentTime + i * 0.08 + 0.25);
+    });
+  } catch(e) {}
+}
+
+function playWinSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const melody = [523, 659, 784, 1047, 784, 1047, 1047];
+    melody.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.15;
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.start(t); osc.stop(t + 0.3);
+    });
+  } catch(e) {}
+}
+
+function showEffect(emoji) {
+  const el = document.createElement('div');
+  el.className = 'sound-wave';
+  el.textContent = emoji;
+  el.style.cssText = `left: ${Math.random() * 60 + 20}%; top: ${Math.random() * 40 + 30}%;`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+function launchConfetti(count = 30) {
+  const container = document.getElementById('confetti-container');
+  const colors = ['#FFD93D', '#FF6B35', '#4ECDC4', '#A855F7', '#FF6B9D', '#6BCB77'];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.cssText = `
+      left: ${Math.random() * 100}%;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      width: ${6 + Math.random() * 8}px;
+      height: ${6 + Math.random() * 8}px;
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      animation-duration: ${1.5 + Math.random() * 2}s;
+      animation-delay: ${Math.random() * 0.5}s;
+    `;
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 3000);
+  }
+}
+
+function restartGame() {
+  installedParts = [];
+  selectedPart = null;
+  points = 0;
+  document.getElementById('badge-piezas').textContent = `🔩 Piezas: 0 / ${PARTS.length}`;
+  document.getElementById('badge-puntos').textContent = `⭐ Puntos: 0`;
+  document.getElementById('badge-nivel').textContent = `📚 Nivel: Aprendiz`;
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('congrats-card').classList.remove('show');
+  document.getElementById('info-placeholder').style.display = 'block';
+  document.getElementById('part-detail-content').innerHTML = '';
+  renderParts();
+  renderInstalledParts();
+  show3DModel('cpu');
+}
+
+// =============================================
+//  INICIALIZACIÓN
+// =============================================
+window.addEventListener('load', () => {
+  createStars();
+  renderParts();
+  renderInstalledParts();
+  init3D();
+});
+
+window.addEventListener('resize', () => {
+  if (!renderer) return;
+  const canvas = document.getElementById('canvas-3d');
+  const W = canvas.clientWidth;
+  const H = 300;
+  renderer.setSize(W, H);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+});
+</script>
+</body>
+</html>
